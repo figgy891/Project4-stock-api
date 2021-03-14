@@ -8,8 +8,10 @@ var cors = require('cors')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
-var stocksRouter = require('./routes/stocks');
+var portfolioRouter = require('./routes/portfolio');
 var walletRouter = require('./routes/wallet');
+
+require('./lib/seed');
 
 
 var app = express();
@@ -31,11 +33,9 @@ app.use('/users', usersRouter);
 
 // write some code here to bootstrap your wallet with 100,000
 
-app.use('/api/v1/stocks', stocksRouter);
+app.use('/api/v1/portfolio', portfolioRouter);
 
 app.use('/api/v1/wallet', walletRouter);
-
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
