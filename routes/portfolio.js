@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-const { Portfolio } = require('../lib/models');
+const { Portfolio, Wallet } = require('../lib/models');
 const yahooStockPrices = require('yahoo-stock-prices');
 //const mysql2 = require('mysql2');
 
@@ -34,10 +34,15 @@ router.post('/', async function (req, res, next) {
     
     console.log(req.body)
     let stock = await Portfolio.create(req.body);
-    // // Stock.create(req.body)
-    // //     .then((stock) => {
-    // //         res.json({success: true});
-    // //     })
+    // after this point, the purchase has been made
+    let currentWallet = await Wallet.findOne({});
+    if(currentWallet){
+        let currentWalletValue = currentWallet.value;
+        let amountSpent = req.body.quantity * req.body.price;
+        let newWalletValue = currentWalletValue - amountSpent;
+        console.log('newWalletValue', newWalletValue);
+        currentWallet.update({value: newWalletValue})
+    }
 
     res.json(stock);
 });
@@ -56,9 +61,30 @@ router.put('/:id', async function (req, res, next) {
 
 // DELETE
 router.delete('/:id', async function (req, res, next) {
-    // console.log(req.params)
-    let dog = await Portfolio.destroy({ where: { id: req.params.id } });
-    res.json(dog);
+    console.log(req.params)
+    let currentStock = await Portfolio.findOne({where: {id: req.params.id}});
+    if(currentStock) {
+        let symbol = currentStock.symbol;
+        let quantity = currentStock.quantity;
+        const data = await yahooStockPrices.getCurrentData(symbol);
+        console.log(data)
+
+        let cashEarnedFromStockSale = parseInt(parseInt(quantity) * data.price);
+
+        let currentWallet = await Wallet.findOne({});
+        if(currentWallet){
+            let currentWalletValue = parseInt(currentWallet.value);
+            let newWalletValue = currentWalletValue + cashEarnedFromStockSale;
+            console.log('newWalletValue', newWalletValue);
+            await currentWallet.update({value: newWalletValue})
+        }
+
+        let stock = await Portfolio.destroy({where: {id: req.params.id}});
+        // update the wallet happens here
+        // res.json(stock);
+        res.json(stock);
+
+    }
 });
 
 
